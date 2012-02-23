@@ -1,9 +1,8 @@
 //
 //  UIView+WSDownload.h
-//  Local
 //
 //  Created by Ray Hilton on 14/02/12.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 Wirestorm Pty Ltd. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>
