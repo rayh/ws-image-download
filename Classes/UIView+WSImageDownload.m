@@ -15,10 +15,13 @@
 }
 
 
-- (void)downloadUrl:(NSURL*)url asImage:(WSImageDownloadCompletionBlock)completion failure:(WSDataDownloadFailureBlock)failure
+- (void)downloadUrl:(NSURL*)url
+            asImage:(WSImageDownloadCompletionBlock)completion 
+              start:(WSDataDownloadStartBlock)start
+            failure:(WSDataDownloadFailureBlock)failure
 {
     [[WSImageDownload sharedService] cancelDownloadsForOwner:self];
-    [[WSImageDownload sharedService] downloadUrl:url owner:self asImage:completion failure:failure];
+    [[WSImageDownload sharedService] downloadUrl:url owner:self asImage:completion start:start failure:failure];
 }
 
 - (void)downloadUrl:(NSURL*)url
@@ -31,12 +34,7 @@
     [self downloadUrl:url asImage:^(UIImage *image, BOOL fromCache) {
         if(fromCache) {
             configure(image,fromCache);
-        } else {
-            if(image==nil) {
-                configure(nil, NO);
-                return;
-            } // Ignore, as this means we have missed the cache and are going to fetch
-            
+        } else {            
             [UIView animateWithDuration:duration/2
                              animations:^{
                                  if(animateOut) animateOut();
@@ -50,6 +48,10 @@
                                                   }];
                              }];
         }        
+    } start:^(NSURL *url, BOOL fromCache) {
+        configure(nil, NO);
+    } failure:^(NSError *error) {
+        //
     }];
 }
 @end

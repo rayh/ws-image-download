@@ -138,6 +138,7 @@
 - (void)downloadUrl:(NSURL*)url
               owner:(id)owner
              asData:(WSDataDownloadCompletionBlock)completion 
+              start:(WSDataDownloadStartBlock)startBlock
             failure:(WSDataDownloadFailureBlock)failure
 {
     if(!url)
@@ -146,31 +147,39 @@
         return;
     }
     
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
-    
-    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
-    if(cachedResponse) {
-        completion(cachedResponse.data, YES);
-    } else {
-        completion(nil, NO);
+    [self.operationQueue addOperationWithBlock:^{
+        NSURLRequest *request = [NSURLRequest requestWithURL:url];
         
-        WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:owner
-                                                              request:request
-                                                           completion:^(NSData *data, BOOL fromCache) {
-                                                               completion(data, fromCache);
-                                                           } failure:failure];
-        
-        if(owner)
-            [[owner __ws_addDownloadTasks] addObject:task];
-        
-        [self.operationQueue addOperation:task];
-    }
-    
+        NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
+        if(cachedResponse) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if(startBlock)
+                    startBlock(url, YES);
+                
+                completion(cachedResponse.data, YES);
+            });
+        } else {
+            if(startBlock)
+                startBlock(url, NO);
+            
+            WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:owner
+                                                                  request:request
+                                                               completion:^(NSData *data, BOOL fromCache) {
+                                                                   completion(data, fromCache);
+                                                               } failure:failure];
+            
+            if(owner)
+                [[owner __ws_addDownloadTasks] addObject:task];
+            
+            [self.operationQueue addOperation:task];
+        }
+    }];    
 }
 
 - (void)downloadUrl:(NSURL*)url
               owner:(id)owner
             asImage:(WSImageDownloadCompletionBlock)completion
+              start:(WSDataDownloadStartBlock)startBlock
             failure:(WSDataDownloadFailureBlock)failure
 {
     [self downloadUrl:url owner:owner asData:^(NSData *data, BOOL fromCache) {
@@ -181,7 +190,9 @@
         }
         
         completion(image, fromCache);
-    } failure:failure];
+    }
+                start:startBlock
+              failure:failure];
 }
 
 - (void)cancelAllDownloads
