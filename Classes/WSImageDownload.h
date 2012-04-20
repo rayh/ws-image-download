@@ -17,6 +17,8 @@ typedef void (^WSDataDownloadFailureBlock)(NSError *error);
 + (WSImageDownload*)sharedService;
 - (void)cancelAllDownloads;
 - (void)cancelDownloadsForOwner:(id)owner;
+- (void)suspendDownloads;
+- (void)resumeDownloads;
 
 - (void)downloadUrl:(NSURL*)url 
               owner:(id)owner

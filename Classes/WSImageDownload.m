@@ -212,6 +212,16 @@
     [self.operationQueue cancelAllOperations];
 }
 
+- (void)suspendDownloads
+{
+    [self.operationQueue setSuspended:YES];
+}
+
+- (void)resumeDownloads
+{
+    [self.operationQueue setSuspended:NO];
+}
+
 - (void)cancelDownloadsForOwner:(id)owner
 {
     if(!owner)
