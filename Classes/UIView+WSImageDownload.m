@@ -11,7 +11,7 @@
 
 - (void)downloadUrl:(NSURL*)url asImage:(WSImageDownloadCompletionBlock)completion
 {
-    [self downloadUrl:url asImage:completion failure:nil];
+    [self downloadUrl:url asImage:completion start:nil failure:nil];
 }
 
 
