@@ -27,13 +27,106 @@
 
 @end
 
+@interface WSImageCacheCheckTask : NSOperation 
+@property (nonatomic, retain) NSURL *url;
+@property (nonatomic, copy) WSDataDownloadCompletionBlock completion;
+@property (nonatomic, copy) WSDataDownloadFailureBlock failure;
+@property (nonatomic, copy) WSDataDownloadStartBlock startBlock;
+@property (nonatomic, assign) id owner;
+@property (nonatomic, retain) NSOperationQueue *downloadQueue;
+@end
+
 @interface WSImageDownloadTask : NSOperation
 @property (nonatomic, retain) NSURL *url;
 @property (nonatomic, copy) WSDataDownloadCompletionBlock completion;
 @property (nonatomic, copy) WSDataDownloadFailureBlock failure;
 @property (nonatomic, copy) WSDataDownloadStartBlock startBlock;
 @property (nonatomic, assign) id owner;
+
+
++ (WSImageDownloadTask*)taskForOwner:(id)owner
+                                 url:(NSURL*)url
+                          completion:(WSDataDownloadCompletionBlock)completion
+                               start:(WSDataDownloadStartBlock)startBlock
+                             failure:(WSDataDownloadFailureBlock)failure;
 @end
+
+
+@implementation WSImageCacheCheckTask
+@synthesize startBlock=_startBlock;
+@synthesize url=_url;
+@synthesize completion=_completion;
+@synthesize failure=_failure;
+@synthesize owner=_owner;
+@synthesize downloadQueue=_downloadQueue;
+
+- (void)dealloc
+{
+    self.downloadQueue = nil;
+    self.startBlock = nil;
+    self.failure = nil;
+    self.url = nil;
+    self.owner = nil;
+    self.completion = nil;
+    [super dealloc];
+}
+
++ (WSImageCacheCheckTask*)taskForOwner:(id)owner
+                                 url:(NSURL*)url
+                         downloadQueue:(NSOperationQueue*)downloadQueue
+                          completion:(WSDataDownloadCompletionBlock)completion
+                               start:(WSDataDownloadStartBlock)startBlock
+                             failure:(WSDataDownloadFailureBlock)failure
+{
+    WSImageCacheCheckTask *task = [[[WSImageCacheCheckTask alloc] init] autorelease];
+    task.owner      = owner;
+    task.url        = url;
+    task.completion = completion;
+    task.failure    = failure;
+    task.startBlock = startBlock;
+    task.downloadQueue = downloadQueue;
+    return task;
+}
+
+- (void)main
+{
+    NSURLRequest *request = [NSURLRequest requestWithURL:self.url];
+    
+    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
+    if(cachedResponse) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(self.startBlock)
+                self.startBlock(self.url, YES);
+            
+            self.completion(cachedResponse.data, YES);
+        });
+        
+        return;
+    }
+    
+    
+    if(self.startBlock)
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.startBlock(self.url, NO);
+        });
+    
+    WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:self.owner
+                                                              url:self.url
+                                                       completion:^(NSData *data, BOOL fromCache) {
+                                                           self.completion(data, fromCache);
+                                                       } 
+                                                            start:self.startBlock
+                                                          failure:self.failure];
+    
+    if(self.owner)
+        [[self.owner __ws_addDownloadTasks] addObject:task];
+    
+    [self.downloadQueue addOperation:task];
+    
+} 
+
+@end
+
 
 @implementation WSImageDownloadTask
 @synthesize startBlock=_startBlock;
@@ -130,11 +223,13 @@
 @end
 
 @interface WSImageDownload ()
-@property (nonatomic, retain) NSOperationQueue *operationQueue;
+@property (nonatomic, retain) NSOperationQueue *cacheQueryQueue;
+@property (nonatomic, retain) NSOperationQueue *downloadQueue;
 @end
 
 @implementation WSImageDownload
-@synthesize operationQueue=_operationQueue;
+@synthesize cacheQueryQueue=_cacheQueryQueue;
+@synthesize downloadQueue=_downloadQueue;
 
 + (WSImageDownload*)sharedService
 {
@@ -148,7 +243,8 @@
 
 - (void)dealloc
 {
-    self.operationQueue = nil;
+    self.cacheQueryQueue = nil;
+    self.downloadQueue = nil;
     [super dealloc];
 }
 
@@ -156,8 +252,11 @@
 {
     if(self = [super init])
     {
-        self.operationQueue = [[[NSOperationQueue alloc] init] autorelease];
-        self.operationQueue.maxConcurrentOperationCount = 2;
+        self.cacheQueryQueue = [[[NSOperationQueue alloc] init] autorelease];
+        self.cacheQueryQueue.maxConcurrentOperationCount = 4;
+
+        self.downloadQueue = [[[NSOperationQueue alloc] init] autorelease];
+        self.downloadQueue.maxConcurrentOperationCount = 2;
     }
     return self;
 }
@@ -173,19 +272,34 @@
         NSLog(@"WSImageDownload was asked to download a nil url!");
         return;
     }
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+    
+    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
+    if(cachedResponse) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(startBlock)
+                startBlock(url, YES);
+            
+            completion(cachedResponse.data, YES);
+        });
+        
+        return;
+    }
 
-    WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:owner
+    WSImageCacheCheckTask *task = [WSImageCacheCheckTask taskForOwner:owner
                                                               url:url
-                                                       completion:^(NSData *data, BOOL fromCache) {
-                                                           completion(data, fromCache);
-                                                       } 
+                                                        downloadQueue:self.downloadQueue
+                                                           completion:^(NSData *data, BOOL fromCache) {
+                                                               completion(data, fromCache);
+                                                           } 
                                                             start:startBlock
                                                           failure:failure];
     
     if(owner)
         [[owner __ws_addDownloadTasks] addObject:task];
     
-    [self.operationQueue addOperation:task];
+    [self.cacheQueryQueue addOperation:task];
 }
 
 - (void)downloadUrl:(NSURL*)url
@@ -209,17 +323,20 @@
 
 - (void)cancelAllDownloads
 {
-    [self.operationQueue cancelAllOperations];
+    [self.cacheQueryQueue cancelAllOperations];
+    [self.downloadQueue cancelAllOperations];
 }
 
 - (void)suspendDownloads
 {
-    [self.operationQueue setSuspended:YES];
+    [self.cacheQueryQueue setSuspended:YES];
+    [self.downloadQueue setSuspended:YES];
 }
 
 - (void)resumeDownloads
 {
-    [self.operationQueue setSuspended:NO];
+    [self.cacheQueryQueue setSuspended:NO];
+    [self.downloadQueue setSuspended:NO];
 }
 
 - (void)cancelDownloadsForOwner:(id)owner

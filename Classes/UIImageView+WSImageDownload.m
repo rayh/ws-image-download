@@ -15,6 +15,8 @@
               animateIn:(void(^)(void))animateIn
                duration:(CGFloat)duration
 {
+    // FIXME: Only perform download if the URL is not what is currently set
+    
     [self downloadUrl:url 
            animateOut:animateOut 
             animateIn:animateIn
