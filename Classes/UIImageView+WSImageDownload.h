@@ -12,7 +12,12 @@
 // Compatability with SDWebImage
 - (void)setImageWithURL:(NSURL*)url;
 
+
+- (void)setImageWithURL:(NSURL *)url
+       placeholderImage:(UIImage*)placeholderImage;
+
 - (void)setImageWithURL:(NSURL*)url
+       placeholderImage:(UIImage*)placeholderImage
              animateOut:(void(^)(void))animateOut
               animateIn:(void(^)(void))animateIn
                duration:(CGFloat)duration;

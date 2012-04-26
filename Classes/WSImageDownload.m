@@ -308,7 +308,10 @@
               start:(WSDataDownloadStartBlock)startBlock
             failure:(WSDataDownloadFailureBlock)failure
 {
-    [self downloadUrl:url owner:owner asData:^(NSData *data, BOOL fromCache) {
+    [self downloadUrl:url 
+                owner:owner
+               asData:^(NSData *data, BOOL fromCache) 
+    {
         UIImage *image = [UIImage imageWithData:data];
         if(!image) {
             if(failure) failure([NSError errorWithDomain:@"Bad image data" code:0 userInfo:nil]);
