@@ -104,12 +104,6 @@
         return;
     }
     
-    
-    if(self.startBlock)
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.startBlock(self.url, NO);
-        });
-    
     WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:self.owner
                                                               url:self.url
                                                        completion:^(NSData *data, BOOL fromCache) {
@@ -163,19 +157,6 @@
 - (void)main
 {
     NSURLRequest *request = [NSURLRequest requestWithURL:self.url];
-    
-    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
-    if(cachedResponse) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if(self.startBlock)
-                self.startBlock(self.url, YES);
-            
-            self.completion(cachedResponse.data, YES);
-        });
-
-        return;
-    }
-    
     
     if(self.startBlock)
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -270,20 +251,6 @@
     if(!url)
     {
         NSLog(@"WSImageDownload was asked to download a nil url!");
-        return;
-    }
-    
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
-    
-    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
-    if(cachedResponse) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if(startBlock)
-                startBlock(url, YES);
-            
-            completion(cachedResponse.data, YES);
-        });
-        
         return;
     }
 
