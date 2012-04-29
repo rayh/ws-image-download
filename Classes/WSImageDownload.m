@@ -237,7 +237,7 @@
         self.cacheQueryQueue.maxConcurrentOperationCount = 4;
 
         self.downloadQueue = [[[NSOperationQueue alloc] init] autorelease];
-        self.downloadQueue.maxConcurrentOperationCount = 2;
+        self.downloadQueue.maxConcurrentOperationCount = 3;
     }
     return self;
 }
