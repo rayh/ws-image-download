@@ -9,6 +9,8 @@
 
 @interface UIImageView (WSImageDownload)
 
+- (NSURL*)imageUrl;
+
 // Compatability with SDWebImage
 - (void)setImageWithURL:(NSURL*)url;
 

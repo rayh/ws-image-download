@@ -102,6 +102,11 @@
         });
         
         return;
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(self.startBlock)
+                self.startBlock(self.url, NO);
+        });
     }
     
     WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:self.owner
@@ -157,12 +162,6 @@
 - (void)main
 {
     NSURLRequest *request = [NSURLRequest requestWithURL:self.url];
-    
-    if(self.startBlock)
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.startBlock(self.url, NO);
-        });
-        
         
     NSHTTPURLResponse *response = nil;
     NSError *error = nil;
