@@ -10,13 +10,13 @@
 
 @interface UIView (WSDownload)
 
-- (void)downloadUrl:(NSURL*)url 
-            asImage:(WSImageDownloadCompletionBlock)completion;
+- (void)downloadUrl:(NSURL*)url asImage:(WSImageDownloadCompletionBlock)completion;
 
 - (void)downloadUrl:(NSURL*)url
             asImage:(WSImageDownloadCompletionBlock)completion 
               start:(WSDataDownloadStartBlock)start
             failure:(WSDataDownloadFailureBlock)failure;
+
 /**
  A convenience method to:
  - Download the image
