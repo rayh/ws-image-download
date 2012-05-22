@@ -28,71 +28,46 @@
 @end
 
 @interface WSImageDownloadTask : NSOperation
-@property (nonatomic, retain) NSURL *url;
+@property (nonatomic, retain) NSURLRequest *request;
 @property (nonatomic, copy) WSDataDownloadCompletionBlock completion;
 @property (nonatomic, copy) WSDataDownloadFailureBlock failure;
-@property (nonatomic, copy) WSDataDownloadStartBlock startBlock;
 @property (nonatomic, assign) id owner;
 @end
 
 @implementation WSImageDownloadTask
-@synthesize startBlock=_startBlock;
-@synthesize url=_url;
+@synthesize request=_request;
 @synthesize completion=_completion;
 @synthesize failure=_failure;
 @synthesize owner=_owner;
 
 - (void)dealloc
 {
-    self.startBlock = nil;
     self.failure = nil;
-    self.url = nil;
+    self.request = nil;
     self.owner = nil;
     self.completion = nil;
     [super dealloc];
 }
 
 + (WSImageDownloadTask*)taskForOwner:(id)owner
-                                 url:(NSURL*)url
+                             request:(NSURLRequest*)request
                           completion:(WSDataDownloadCompletionBlock)completion
-                               start:(WSDataDownloadStartBlock)startBlock
                              failure:(WSDataDownloadFailureBlock)failure
 {
     WSImageDownloadTask *task = [[[WSImageDownloadTask alloc] init] autorelease];
     task.owner      = owner;
-    task.url        = url;
+    task.request    = request;
     task.completion = completion;
     task.failure    = failure;
-    task.startBlock = startBlock;
     return task;
 }
 
 - (void)main
 {
-    NSURLRequest *request = [NSURLRequest requestWithURL:self.url];
-    
-    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
-    if(cachedResponse) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if(self.startBlock)
-                self.startBlock(self.url, YES);
-            
-            self.completion(cachedResponse.data, YES);
-        });
-
-        return;
-    }
-    
-    
-    if(self.startBlock)
-        dispatch_async(dispatch_get_main_queue(), ^{
-            self.startBlock(self.url, NO);
-        });
-        
         
     NSHTTPURLResponse *response = nil;
     NSError *error = nil;
-    NSData *data = [NSURLConnection sendSynchronousRequest:request
+    NSData *data = [NSURLConnection sendSynchronousRequest:self.request
                                          returningResponse:&response
                                                      error:&error];
     
@@ -106,7 +81,7 @@
     }
     
     if(response.statusCode>=300) {
-        if(self.failure) self.failure([NSError errorWithDomain:request.URL.absoluteString
+        if(self.failure) self.failure([NSError errorWithDomain:self.request.URL.absoluteString
                                          code:response.statusCode 
                                      userInfo:nil]);
         return;
@@ -173,13 +148,28 @@
         NSLog(@"WSImageDownload was asked to download a nil url!");
         return;
     }
-
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+    
+    NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
+    if(cachedResponse) {
+        if(startBlock)
+            startBlock(url, YES);
+        
+        completion(cachedResponse.data, YES);
+    
+        return;
+    }
+    
+    
+    if(startBlock)
+        startBlock(url, NO);
+        
     WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:owner
-                                                              url:url
+                                                          request:request
                                                        completion:^(NSData *data, BOOL fromCache) {
                                                            completion(data, fromCache);
                                                        } 
-                                                            start:startBlock
                                                           failure:failure];
     
     if(owner)
