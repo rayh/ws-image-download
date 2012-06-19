@@ -98,7 +98,7 @@
         return;
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        self.completion(data, NO);
+        self.completion(response, data, NO);
     });              
 } 
     
@@ -148,7 +148,7 @@
         NSLog(@"WSImageDownload was asked to download a nil url!");
         return;
     }
-    
+        
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     
     NSCachedURLResponse *cachedResponse = [[NSURLCache sharedURLCache] cachedResponseForRequest:request];
@@ -156,10 +156,12 @@
         if(startBlock)
             startBlock(url, YES);
         
-        completion(cachedResponse.data, YES);
+        completion((NSHTTPURLResponse*)cachedResponse.response, cachedResponse.data, YES);
     
         return;
     }
+    
+//    NSLog(@"Download %@", url);
     
     
     if(startBlock)
@@ -167,9 +169,7 @@
         
     WSImageDownloadTask *task = [WSImageDownloadTask taskForOwner:owner
                                                           request:request
-                                                       completion:^(NSData *data, BOOL fromCache) {
-                                                           completion(data, fromCache);
-                                                       } 
+                                                       completion:completion
                                                           failure:failure];
     
     if(owner)
@@ -184,7 +184,7 @@
               start:(WSDataDownloadStartBlock)startBlock
             failure:(WSDataDownloadFailureBlock)failure
 {
-    [self downloadUrl:url owner:owner asData:^(NSData *data, BOOL fromCache) {
+    [self downloadUrl:url owner:owner asData:^(NSHTTPURLResponse *response, NSData *data, BOOL fromCache) {
         UIImage *image = [UIImage imageWithData:data];
         if(!image) {
             if(failure) failure([NSError errorWithDomain:@"Bad image data" code:0 userInfo:nil]);

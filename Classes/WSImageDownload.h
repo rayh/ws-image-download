@@ -7,7 +7,7 @@
 
 #import <Foundation/Foundation.h>
 
-typedef void (^WSDataDownloadCompletionBlock)(NSData *data, BOOL fromCache);
+typedef void (^WSDataDownloadCompletionBlock)(NSHTTPURLResponse *response, NSData *data, BOOL fromCache);
 typedef void (^WSImageDownloadCompletionBlock)(UIImage *image, BOOL fromCache);
 typedef void (^WSDataDownloadStartBlock)(NSURL *url, BOOL fromCache);
 typedef void (^WSDataDownloadFailureBlock)(NSError *error);
