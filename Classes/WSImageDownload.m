@@ -71,6 +71,12 @@
                                          returningResponse:&response
                                                      error:&error];
     
+    NSLog(@"[WSImageDownload] %@ %d %db %@", 
+          self.request.URL, 
+          response.statusCode,
+          [data length],
+          [response allHeaderFields]);
+    
     // Unset this object from the owner
     if(self.owner)
         [[self.owner __ws_addDownloadTasks] removeObject:self];
