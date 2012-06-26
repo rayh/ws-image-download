@@ -40,21 +40,12 @@
 @synthesize failure=_failure;
 @synthesize owner=_owner;
 
-- (void)dealloc
-{
-    self.failure = nil;
-    self.request = nil;
-    self.owner = nil;
-    self.completion = nil;
-    [super dealloc];
-}
-
 + (WSImageDownloadTask*)taskForOwner:(id)owner
                              request:(NSURLRequest*)request
                           completion:(WSDataDownloadCompletionBlock)completion
                              failure:(WSDataDownloadFailureBlock)failure
 {
-    WSImageDownloadTask *task = [[[WSImageDownloadTask alloc] init] autorelease];
+    WSImageDownloadTask *task = [[WSImageDownloadTask alloc] init];
     task.owner      = owner;
     task.request    = request;
     task.completion = completion;
@@ -127,17 +118,11 @@
     return service;
 }
 
-- (void)dealloc
-{
-    self.operationQueue = nil;
-    [super dealloc];
-}
-
 - (id)init
 {
     if(self = [super init])
     {
-        self.operationQueue = [[[NSOperationQueue alloc] init] autorelease];
+        self.operationQueue = [[NSOperationQueue alloc] init];
         self.operationQueue.maxConcurrentOperationCount = 2;
     }
     return self;
