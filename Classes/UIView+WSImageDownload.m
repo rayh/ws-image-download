@@ -14,6 +14,10 @@
     [self downloadUrl:url asImage:completion start:nil failure:nil];
 }
 
+- (void)cancelAllImageDownloads
+{
+    [[WSImageDownload sharedService] cancelDownloadsForOwner:self];
+}
 
 - (void)downloadUrl:(NSURL*)url
             asImage:(WSImageDownloadCompletionBlock)completion 

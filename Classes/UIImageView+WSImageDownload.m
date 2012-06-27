@@ -55,4 +55,5 @@
 {
     [self setImageWithURL:url placeholderImage:nil];
 }
+
 @end

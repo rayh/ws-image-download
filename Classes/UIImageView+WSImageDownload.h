@@ -6,6 +6,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "UIView+WSImageDownload.h"
 
 @interface UIImageView (WSImageDownload)
 

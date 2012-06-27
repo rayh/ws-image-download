@@ -17,6 +17,9 @@
               start:(WSDataDownloadStartBlock)start
             failure:(WSDataDownloadFailureBlock)failure;
 
+
+- (void)cancelAllImageDownloads;
+
 /**
  A convenience method to:
  - Download the image
